@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard with Chart.js & DataTables</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #dashboard { position: relative; width: 100%; height: 100vh; background: #f0f0f0; }
+    .widget {
+      position: absolute;
+      width: 400px;
+      height: 300px;
+      background: white;
+      border: 1px solid #ccc;
+      padding: 10px;
+      resize: both;
+      overflow: auto;
+      box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+      cursor: move;
+    }
+    .widget-header {
+      cursor: move;
+      font-weight: bold;
+      background: #eee;
+      padding: 5px;
+    }
+    .close-btn {
+      float: right;
+      cursor: pointer;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <button onclick="addWidget('chart')">Add Chart</button>
+  <button onclick="addWidget('table')">Add Table</button>
+  <div id="dashboard"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+  <script>
+    let widgetCounter = 0;
+
+    function addWidget(type) {
+      const widget = document.createElement('div');
+      widget.className = 'widget';
+      widget.style.left = `${50 + widgetCounter * 20}px`;
+      widget.style.top = `${50 + widgetCounter * 20}px`;
+
+      const widgetId = `widget${++widgetCounter}`;
+
+      widget.innerHTML = `
+        <div class="widget-header">
+          ${type === 'chart' ? 'Chart Widget' : 'Table Widget'}
+          <span class="close-btn" onclick="this.closest('.widget').remove()">×</span>
+        </div>
+        <div class="widget-body">
+          ${type === 'chart' ? `<canvas id="${widgetId}_canvas"></canvas>` : `<table id="${widgetId}_table" class="display" width="100%"></table>`}
+        </div>
+      `;
+
+      document.getElementById('dashboard').appendChild(widget);
+      makeDraggable(widget);
+
+      if (type === 'chart') {
+        createChart(`${widgetId}_canvas`);
+      } else {
+        createTable(`${widgetId}_table`);
+      }
+    }
+
+    function makeDraggable(el) {
+      const header = el.querySelector('.widget-header');
+      let offsetX = 0, offsetY = 0, isDragging = false;
+
+      header.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+      });
+
+      function drag(e) {
+        if (isDragging) {
+          el.style.left = `${e.clientX - offsetX}px`;
+          el.style.top = `${e.clientY - offsetY}px`;
+        }
+      }
+
+      function stopDrag() {
+        isDragging = false;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+      }
+    }
+
+    function createChart(canvasId) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      const data = {
+        labels: Array.from({ length: 10 }, (_, i) => `Label ${i+1}`),
+        datasets: [{
+          label: 'Random Data',
+          data: Array.from({ length: 10 }, () => Math.floor(Math.random() * 100)),
+          borderColor: 'rgba(75, 192, 192, 1)',
+          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          tension: 0.4
+        }]
+      };
+      new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    function createTable(tableId) {
+      const data = Array.from({ length: 5 }, () => [
+        `Item ${Math.floor(Math.random()*100)}`,
+        Math.floor(Math.random() * 1000),
+        `${(Math.random() * 100).toFixed(2)}%`
+      ]);
+
+      const columns = [
+        { title: "Name" },
+        { title: "Value" },
+        { title: "Change" }
+      ];
+
+      $(`#${tableId}`).DataTable({
+        data: data,
+        columns: columns,
+        paging: false,
+        searching: false,
+        info: false
+      });
+    }
+  </script>
+</body>
+</html>
