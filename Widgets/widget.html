@@ -5,36 +5,66 @@
   <title>Dashboard with Chart.js & DataTables</title>
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
   <style>
-    body { font-family: Arial, sans-serif; }
-    #dashboard { position: relative; width: 100%; height: 100vh; background: #f0f0f0; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f0f0f0; }
+    #dashboard { position: relative; width: 100%; height: calc(100vh - 60px); border: 1px solid #ccc; overflow: auto; }
+
+    .controls {
+      margin-bottom: 10px;
+    }
+
     .widget {
       position: absolute;
-      width: 400px;
-      height: 300px;
+      width: 500px;
+      height: 400px;
       background: white;
       border: 1px solid #ccc;
       padding: 10px;
       resize: both;
-      overflow: auto;
+      overflow: hidden;
       box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
-      cursor: move;
     }
+
     .widget-header {
       cursor: move;
       font-weight: bold;
       background: #eee;
       padding: 5px;
     }
+
     .close-btn {
       float: right;
       cursor: pointer;
       color: red;
     }
+
+    .widget-body {
+      width: 100%;
+      height: calc(100% - 30px);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    table.dataTable {
+      width: 100% !important;
+    }
   </style>
 </head>
 <body>
-  <button onclick="addWidget('chart')">Add Chart</button>
-  <button onclick="addWidget('table')">Add Table</button>
+
+  <div class="controls">
+    <label for="interfaceSelector">Chart Type:</label>
+    <select id="interfaceSelector">
+      <option value="line">Line Chart</option>
+      <option value="bar">Bar Chart</option>
+      <option value="pie">Pie Chart</option>
+    </select>
+    <button onclick="addWidget('chart')">Add Chart</button>
+    <button onclick="addWidget('table')">Add Table</button>
+  </div>
+
   <div id="dashboard"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -51,6 +81,7 @@
       widget.style.top = `${50 + widgetCounter * 20}px`;
 
       const widgetId = `widget${++widgetCounter}`;
+      const selectedChartType = document.getElementById('interfaceSelector')?.value || 'line';
 
       widget.innerHTML = `
         <div class="widget-header">
@@ -58,7 +89,7 @@
           <span class="close-btn" onclick="this.closest('.widget').remove()">×</span>
         </div>
         <div class="widget-body">
-          ${type === 'chart' ? `<canvas id="${widgetId}_canvas"></canvas>` : `<table id="${widgetId}_table" class="display" width="100%"></table>`}
+          ${type === 'chart' ? `<canvas id="${widgetId}_canvas"></canvas>` : `<table id="${widgetId}_table" class="display"></table>`}
         </div>
       `;
 
@@ -66,7 +97,7 @@
       makeDraggable(widget);
 
       if (type === 'chart') {
-        createChart(`${widgetId}_canvas`);
+        createChart(`${widgetId}_canvas`, selectedChartType);
       } else {
         createTable(`${widgetId}_table`);
       }
@@ -98,22 +129,39 @@
       }
     }
 
-    function createChart(canvasId) {
+    function createChart(canvasId, chartType = 'line') {
       const ctx = document.getElementById(canvasId).getContext('2d');
+      const labels = Array.from({ length: 5 }, (_, i) => `Label ${i+1}`);
+      const dataValues = Array.from({ length: 5 }, () => Math.floor(Math.random() * 100));
+
       const data = {
-        labels: Array.from({ length: 10 }, (_, i) => `Label ${i+1}`),
+        labels: labels,
         datasets: [{
-          label: 'Random Data',
-          data: Array.from({ length: 10 }, () => Math.floor(Math.random() * 100)),
+          label: 'Sample Data',
+          data: dataValues,
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.5)',
+            'rgba(54, 162, 235, 0.5)',
+            'rgba(255, 206, 86, 0.5)',
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(153, 102, 255, 0.5)'
+          ],
           borderColor: 'rgba(75, 192, 192, 1)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderWidth: 1,
           tension: 0.4
         }]
       };
+
       new Chart(ctx, {
-        type: 'line',
+        type: chartType,
         data: data,
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: chartType !== 'pie' }
+          }
+        }
       });
     }
 
